@@ -1,6 +1,7 @@
 import tkinter as tK
 import mysql.connector
 import hashlib
+import urllib.request
 
 
 class VesselManSys(tK.Frame):
@@ -10,12 +11,12 @@ class VesselManSys(tK.Frame):
         self.root.title("Passenger Vessel Management System")  # the window title
         width, height = self.root.winfo_screenwidth(), self.root.winfo_screenheight()  # obtain screen width and height
         self.root.geometry("%dx%d+0+0" % (width, height))  # set window size to the size of screen
+        self.root.configure(bg="sky blue")
         self.firstName = self.surName = self.phoneNum = self.DOB = self.NOK = ""
 
     def dbConnection(self, statement): # function to connect to the database, execute a statement and return the result
         try:
-            self.conn = mysql.connector.connect(option_files="DBCredentials.conf")
-            #self.conn = mysql.connector.connect(user=file.readline(), password=file.readline(), host=file.readline(), database=file.readline()) #connect to the database
+            self.conn = mysql.connector.connect(option_files="DBCredentials.conf") # opens file and reads database credentials from it
             self.cur = self.conn.cursor() # database cursor
             self.cur.execute(statement) # executes the SQL statement in the database
             try:
@@ -33,9 +34,9 @@ class VesselManSys(tK.Frame):
 
     def dbError(self, error):
         self.forgetAllWidgets()
-        header = tK.Label(text="Passenger Vessel Management System\n\n", font=("Calibri", 24)).pack(side="top")
-        text1 = tK.Label(text="Error: Could not connect to the database\nPlease ensure XAMPP is running.\n\n", font=("Calibri", 21)).pack(side="top")
-        text2 = tK.Label(text="Error: %s" % (error),font=("Calibri", 21)).pack(side="top")
+        tK.Label(self.root, text="\nPassenger Vessel Management System\n\n", font=("Calibri", 24), bg="sky blue").pack(side="top")
+        tK.Label(self.root, text="Error: Could not connect to the database\nPlease ensure XAMPP is running.\n\n", font=("Calibri", 21)).pack(side="top")
+        tK.Label(self.root, text="Error: %s" % (error),font=("Calibri", 21)).pack(side="top")
 
     def forgetAllWidgets(self):    # hides a list of shown widgets
         widgetList = self.root.winfo_children() # all widgets (items) shown on the window
@@ -53,15 +54,16 @@ class userLoginScreen(VesselManSys):  # screen for user to input login details
 
     def loginScreen(self):
         if self.credentialFailFlag == True:
-            failtext = tK.Label(text="Username or Password was incorrect - Please try again.\n\n\n\n\n\n", font=("Calibri", 20)).pack(side="bottom") # if user credentials incorrect, shows this at the bottom of window
-        h1text = tK.Label(text="Passenger Vessel Management System\n\n", font=("Calibri", 28)).pack(side="top")  # window heading text centered at the top available space
-        sidtext = tK.Label(text="Staff ID", font=("Calibri", 22)).pack(side="top")  # text left of entry box
+            tK.Label(self.root, text="Username or Password was incorrect - Please try again.\n\n\n\n\n\n", font=("Calibri", 20)).pack(side="bottom") # if user credentials incorrect, shows this at the bottom of window
+        tK.Label(self.root, text="\nPassenger Vessel Management System\n\n", font=("Calibri", 28), bg="sky blue").pack(side="top")  # window heading text centered at the top available space
+        tK.Label(self.root, text="Staff ID", font=("Calibri", 22), bg="sky blue").pack(side="top")  # text left of entry box
         self.sidbox = tK.Entry(self.root, width=35) # text entry box for staff id
-        sidboxpack = self.sidbox.pack(side="top") # place the text entry box on the screen
-        pwtext = tK.Label(text="\nPassword", font=("Calibri", 22)).pack(side="top")  # text left of entry box
+        self.sidbox.pack(side="top") # place the text entry box on the screen
+        tK.Label(self.root, text="\nPassword", font=("Calibri", 22), bg="sky blue").pack(side="top")  # text left of entry box
         self.pwbox = tK.Entry(self.root, width=35)  # text entry box for password
-        pwboxpack = self.pwbox.pack(side="top") # place the text entry box on the screen
-        loginBut = tK.Button(text="Log In", command=lambda : self.loginBackend()).pack(side="top") # login button - when clicked runs loginBackend function
+        self.pwbox.pack(side="top") # place the text entry box on the screen
+        tK.Label(self.root, text="\n\n\n", bg="sky blue").pack(side="top")
+        tK.Button(self.root, text="Log In", command=lambda : self.loginBackend(), width=20, height=2).pack(side="top") # login button - when clicked runs loginBackend function
 
     def loginBackend(self): # linked to the submit button on login page
         tempSID = self.sidbox.get() # gets the user input from staff id text box on login page
@@ -95,22 +97,48 @@ class userLoginScreen(VesselManSys):  # screen for user to input login details
     def loginComplete(self):    # if user login credentials are valid
         if self.credentialFailFlag == False:
             self.forgetAllWidgets() # clear the screen
-            print("Logged In")
+            h = homePage(self.root) # home page object passing the root so everything is presented on same window
+            h.homeScreen() # show home screen
 
 
 class homePage(VesselManSys): # home screen - menu for the different program functionalities
     def __init__(self, parent):
-        self.root = parent.root # inherit root from VesselManSys
+        self.root = parent # inherit root window from VesselManSys
+
+    def homeScreen(self):
+        tK.Label(self.root, text="\nPassenger Vessel Management System\n\n", font=("Calibri", 28), bg="sky blue").pack(side="top")  # window heading text centered at the top available space
+        if self.networkCheck(): # check if network connection is present
+            tK.Button(self.root, text="AIS", command=lambda : self.aisScreen(), width=45, height=10).place(relx=0.3, rely=0.3,anchor="center")  # AIS button - relx/rely are relative screen positions - 0.5 is central
+        else:
+            tK.Button(self.root, text="AIS\n(unavailable - offline)", width=45, height=10).place(relx=0.3, rely=0.3,anchor="center")  # AIS button
+        if self.networkCheck():
+            tK.Button(self.root, text="Weather", command=lambda : self.weatherScreen(), width=45, height=10).place(relx=0.5, rely=0.3, anchor="center") # Weather button
+        else:
+            tK.Button(self.root, text="Weather\n(unavailable - offline)", width=45, height=10).place(relx=0.5, rely=0.3,anchor="center")  # Weather button
+        if self.networkCheck():
+            tK.Button(self.root, text="Tides", command=lambda : self.tidesScreen(), width=45, height=10).place(relx=0.7, rely=0.3, anchor="center") # Tides button
+        else:
+            tK.Button(self.root, text="Tides", width=45, height=10).place(relx=0.7, rely=0.3,anchor="center")  # Tides button
+
+        tK.Button(self.root, text="Logs", command=lambda : self.logsScreen(), width=45, height=10).place(relx=0.3, rely=0.5, anchor="center") # Logs screen button
+        tK.Button(self.root, text="Emergency", command=lambda : self.emergencyScreen(), width=45, height=10).place(relx=0.5, rely=0.5, anchor="center") # Emergency screen button
+        tK.Button(self.root, text="Checklists", command=lambda : self.checklistsScreen(), width=45, height=10).place(relx=0.7, rely=0.5, anchor="center") # Checklist screen button
+        tK.Button(self.root, text="Calendar", command=lambda : self.calendarScreen(), width=45, height=10).place(relx=0.3, rely=0.7, anchor="center") # Calendar screen button
+        tK.Button(self.root, text="Crew Info Lookup", command=lambda : self.crewInfoScreen(), width=45, height=10).place(relx=0.5, rely=0.7, anchor="center") # Crew Info Lookup Screen
+        tK.Button(self.root, text="User Account Management", command=lambda : self.UAManagementScreen(), width=45, height=10).place(relx=0.7, rely=0.7, anchor="center") # User Account Management Screen
 
 
-class userAccountManager(VesselManSys): # screen for managing user accounts
-    def __init__(self, parent):
-        self.root = parent.root  # inherit the root tkinter window from VesselManSys class
-
+    def networkCheck(self, host="http://google.com"): #checks if google.com is accessible, host must be perameter!
+        try:
+            urllib.request.urlopen(host) # opens host (google.com)
+            return True # if connection is successful
+        except:
+            return False # if connection is unsuccessful
 
 def runApp():
     root = tK.Tk()  # creates an an instance of a tK.TK() class, i.e. a blank GUI window
     a = VesselManSys(root)
+    log = homePage(a)
     vms = userLoginScreen(a)
     root.mainloop()
 
