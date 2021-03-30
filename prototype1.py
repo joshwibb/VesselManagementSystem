@@ -500,9 +500,12 @@ class WeatherScreen(VesselManSys):
 
 
     def apiConnect(self, location): # connects to openweathermap API and returns data from urls below
-        currentString = "http://api.openweathermap.org/data/2.5/weather?q=%s,uk&APPID=ed1700ebb4e7bcdbedb1c921d7e197bf" % (location) # for current weather data
+        file = open("weatherAPIKeys.txt", "r") # read API key from text file
+        key = file.read() # key = contents of text file
+
+        currentString = "http://api.openweathermap.org/data/2.5/weather?q=%s,uk&APPID=%s" % (location, key) # for current weather data
         returnedDict1 = requests.get(currentString).json() # returns data in json format in a dictionary
-        dailyString = "http://api.openweathermap.org/data/2.5/forecast?q=%s,uk&APPID=ed1700ebb4e7bcdbedb1c921d7e197bf" % (location) # for every 3 hour/5 day forecast
+        dailyString = "http://api.openweathermap.org/data/2.5/forecast?q=%s,uk&APPID=%s" % (location, key) # for every 3 hour/5 day forecast
         returnedDict2 = dict(requests.get(dailyString).json()) # as more than one day returned, dictionary of dictionary created
         self.showWeatherResults(returnedDict1, returnedDict2)
 
@@ -536,6 +539,18 @@ class WeatherScreen(VesselManSys):
                 temperatureText = int(todayDict[each]['main']['temp'] - 273.15 )
                 temperatureText = str(temperatureText)+"°C"
                 canvas.create_text((75, 170), text=temperatureText, font=("Calibri 18"), justify="center", anchor="n", width=150)
+
+                feelsLikeText = "Feels Like: " + str(int(fiveDayDict['list'][0]['main']['feels_like'] - 273.15)) + "°C"
+                canvas.create_text((75, 200), text=feelsLikeText, font=("Calibri 16"), justify="center", anchor="n", width=200)
+                windText = "Wind: " + str(round(fiveDayDict['list'][0]['wind']['speed'] * 1.943845, 1)) + "kn\n@ " + str(fiveDayDict['list'][0]['wind']['deg']) + "°"
+                canvas.create_text((75, 230), text=windText, font=("Calibri 16"), justify="center", anchor="n", width=200)
+                pressureText = "Pressure: " + str(fiveDayDict['list'][0]['main']['pressure']) + "hPa"
+                canvas.create_text((75, 300), text=pressureText, font=("Calibri 12"), justify="center", anchor="n", width=200)
+                humidityText = "Humidity: " + str(fiveDayDict['list'][0]['main']['humidity']) + "%"
+                canvas.create_text((75, 330), text=humidityText, font=("Calibri 14"), justify="center", anchor="n", width=200)
+                visibilityText = "Visibility: " + str(round(fiveDayDict['list'][0]['visibility'] * 0.000539957, 2)) + "nm"
+                canvas.create_text((75, 360), text=visibilityText, font=("Calibri 14"), justify="center", anchor="n", width=200)
+
                 canvas.place(x=relxCount, y=0, anchor="nw")
                 relxCount += 150
 
@@ -578,14 +593,26 @@ class WeatherScreen(VesselManSys):
                 canvasArr.append(canvas)
 
             relxCount = 0
+            dayCount = lowerBound
             for each in range(0, len(canvasArr)):
                 canvasArr[each].create_image((75, 30), anchor="n", image=self.imgLinks[each])
-                descText = str(fiveDayDict['list'][each]['weather'][0]['description']).title()
+                descText = str(fiveDayDict['list'][dayCount]['weather'][0]['description']).title()
                 canvasArr[each].create_text((75, 120), text=descText, font=("Calibri 16"), justify="center", anchor="n", width=150)  #
-                temperatureText = int(fiveDayDict['list'][each]['main']['temp'] - 273.15)
+                temperatureText = int(fiveDayDict['list'][dayCount]['main']['temp'] - 273.15)
                 temperatureText = str(temperatureText) + "°C"
                 canvasArr[each].create_text((75, 170), text=temperatureText, font=("Calibri 18"), justify="center", anchor="n", width=150)
                 canvasArr[each].place(x=relxCount, y=0, anchor="nw")
+                feelsLikeText = "Feels Like: " + str(int(fiveDayDict['list'][dayCount]['main']['feels_like'] - 273.15)) + "°C"
+                canvasArr[each].create_text((75, 200), text=feelsLikeText, font=("Calibri 16"), justify="center", anchor="n",width=200)
+                windText = "Wind: " + str(round(fiveDayDict['list'][dayCount]['wind']['speed'] * 1.943845, 1)) + "kn\n@ " + str(fiveDayDict['list'][dayCount]['wind']['deg']) + "°"
+                canvasArr[each].create_text((75, 230), text=windText, font=("Calibri 16"), justify="center", anchor="n", width=200)
+                pressureText = "Pressure: " + str(fiveDayDict['list'][dayCount]['main']['pressure']) + "hPa"
+                canvasArr[each].create_text((75, 300), text=pressureText, font=("Calibri 12"), justify="center", anchor="n", width=200)
+                humidityText = "Humidity: " + str(fiveDayDict['list'][dayCount]['main']['humidity']) + "%"
+                canvasArr[each].create_text((75, 330), text=humidityText, font=("Calibri 14"), justify="center", anchor="n", width=200)
+                visibilityText = "Visibility: " + str(round(fiveDayDict['list'][dayCount]['visibility'] * 0.000539957, 2)) + "nm"
+                canvasArr[each].create_text((75, 360), text=visibilityText, font=("Calibri 14"), justify="center", anchor="n", width=200)
+                dayCount += 1
                 relxCount += 150
 
         self.weatherFrame.place(relx=0.6, rely=0.7, anchor="center")
@@ -617,7 +644,7 @@ class WeatherScreen(VesselManSys):
         windText = "Wind: " + str(round(currDict['wind']['speed'] * 1.943845,1)) + "kn\n@ " + str(currDict['wind']['deg']) + "°"
         canvas.create_text((100, 230), text=windText, font=("Calibri 16"), justify="center", anchor="n", width=200)
         pressureText = "Pressure: " + str(currDict['main']['pressure']) + "hPa"
-        canvas.create_text((100, 290), text=pressureText, font=("Calibri 16"), justify="center", anchor="n", width=200)
+        canvas.create_text((100, 290), text=pressureText, font=("Calibri 12"), justify="center", anchor="n", width=200)
         humidityText = "Humidity: " + str(currDict['main']['humidity']) + "%"
         canvas.create_text((100, 320), text=humidityText, font=("Calibri 16"), justify="center", anchor="n", width=200)
         visibilityText = "Visibility: " + str(round(currDict['visibility']*0.000539957,2)) + "nm"
@@ -640,7 +667,6 @@ class AISScreen(VesselManSys):
     def apiConnect(self):
         sys.excepthook = cefpython.ExceptHook  # To shutdown all CEF processes on error
         cefpython.Initialize()
-        #cefpython.CreateBrowserSync(url="https://www.google.com/")
         cefpython.CreateBrowserSync(url="http://localhost/ais.html", window_title="Map of AIS enabled vessels - Provided by Marinetraffic.com")
         cefpython.MessageLoop()
 
